@@ -1,0 +1,715 @@
+/* ════════════════════════════════════════════════════════════════
+   DeepCompose 材质层 —— 「付印单」实色体系
+   ────────────────────────────────────────────────────────────────
+   本文件只写配方，不出现具体色值 —— 色值全部来自 tokens.css。
+   （原 glass.css 的玻璃/渐变配方已整体废弃，见下）
+
+   层级怎么表达（这是与旧体系最大的分歧点）：
+     旧体系：所有面板都是半透明玻璃，浮在彩色壁纸上，层级靠
+             "谁更透 / 谁模糊更多 / 谁的折射环更亮" 来表达。
+     新体系：**明度色阶**。五级实色，从暗到亮：
+             画布 --bg → 侧轨 --rail → 纸面 --sheet → 抬升 --raised
+             另有 --well 表示"往下凹"的一级（输入区）。
+             层级靠"这块比旁边亮一档"，靠得住，也不会串色。
+
+   三条硬纪律：
+     · 零 backdrop-filter、零渐变、零光晕。发光（glow）一律删除：
+       它是"零偏移彩色光晕"，属于装饰而非深度，且与内容抢注意力。
+     · 阴影只给**真正浮起**的层（弹层、模态）用，且必须是
+       "有偏移 + 有柔化"的实体投影。面板之间一律用 1px 发丝线分界，
+       不用投影 —— 投影多了界面就"糊"。
+     · 选中/命中用 --accent-soft 这类浅染，**绝不**用边框加粗或
+       渐变填充来表达状态。
+
+   浏览器表面（craft floor 明确点名、也最容易被跳过的一项）：
+     文字选择色、光标、滚动条、焦点环都从调色板取色，不用浏览器默认。
+   ════════════════════════════════════════════════════════════════ */
+
+/* ─────────────────────────────────────────────
+   表面基元
+   ─────────────────────────────────────────────
+
+   关于两条"本该有但故意没有"的规则：
+     · 没有 .surface 这个泛用基类。一个不给任何层级的默认表面，实际使用时
+       总会被就近的规则覆盖掉，留着只会让人以为"套上它就对了"。
+     · 没有 .surface-bar。本应用只有两条条带（标题栏、状态条），它们分别
+       靠下缘线和上缘线与内容分界 —— 方向相反，合成一条规则就得再加
+       一个修饰类。这两条配方的位置在 app.css 的 .titlebar / .statusbar。
+   ───────────────────────────────────────────── */
+
+/* 侧轨：文件栏 / 对话栏 / 设置导航栏 —— 比纸面暗一档 */
+.surface-rail {
+  background: var(--rail);
+  border: 1px solid var(--line);
+}
+
+/* 纸面：编辑器与设置内容区 —— 整屏最亮一档，它就是那张纸 */
+.surface-sheet {
+  background: var(--sheet);
+  border: 1px solid var(--line);
+}
+
+/* 抬升：弹层 / 下拉 / 模态 —— 比纸面再亮一档，并给实体投影。
+   只有这一档允许出现阴影，因为只有它真的浮在别的东西上面。 */
+.surface-raised {
+  background: var(--raised);
+  border: 1px solid var(--line);
+  box-shadow:
+    inset 0 1px 0 var(--line-hi),
+    0 2px 6px var(--sh-2),
+    0 16px 40px var(--sh-1);
+}
+/* 浮起动作：位移 + 缩放 + 淡入一起给，读起来是"这块板子落下来"。
+   幅度压得很小（4px / 0.99）—— Operate 场景里弹层要"立刻可用"，
+   不是表演。 */
+.surface-raised {
+  animation: raise-in var(--t-mid) var(--ease-out) both;
+}
+@keyframes raise-in {
+  from {
+    opacity: 0;
+    transform: translateY(-4px) scale(0.992);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+/* 井：输入区、凹槽。方向与凸起相反：底色比周围暗一档 +
+   一条内描边，不用投影也不用渐变。 */
+.surface-well {
+  background: var(--well);
+  box-shadow: inset 0 0 0 1px var(--well-line);
+}
+
+/* App 图标托座：旧版是个玻璃方块（.squircle）。
+   扁平世界里 logo 不需要"托座"，只需要一个规整的方框登记它。
+   .a-about-logo 是设置页关于页用的旧类名，共用同一条配方
+   （它原来自己带一套渐变底 + 白色对角高光 + 双层投影）。 */
+.app-mark,
+.a-about-logo {
+  border-radius: var(--r-lg);
+  overflow: hidden;
+  background: var(--raised);
+  box-shadow: inset 0 0 0 1px var(--line);
+}
+.app-mark img,
+.a-about-logo img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  display: block;
+}
+
+/* ─────────────────────────────────────────────
+   按钮
+   手感要点：按下要「当场」有反应（:active 立刻给，70ms），
+   松手要稳稳落回原位（走 --ease-settle，不过冲）。
+   所以 :active 里只保留 transform 的 70ms，颜色瞬时切换 ——
+   这比全属性一起过渡要"跟手"得多。
+   ───────────────────────────────────────────── */
+
+/* 次级按钮 = 描边按钮：透明底 + 1px 发丝线。这是印刷表单的做法，
+   也让"实心块"能留给唯一的主操作。 */
+.btn,
+.a-btn-primary,
+.a-btn-danger {
+  --btn-h: 32px;
+  height: var(--btn-h);
+  padding: 0 14px;
+  border-radius: var(--r-sm);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  font-size: var(--fs-sub);
+  font-weight: 560;
+  letter-spacing: var(--tr-small);
+  color: var(--tx-1);
+  background: transparent;
+  box-shadow: inset 0 0 0 1px var(--line);
+  transition:
+    transform var(--t-slow) var(--ease-settle),
+    background var(--t-fast) var(--ease),
+    color var(--t-fast) var(--ease),
+    box-shadow var(--t-fast) var(--ease);
+}
+.btn:hover,
+.a-btn-primary:hover,
+.a-btn-danger:hover {
+  background: var(--ctl-hover);
+  box-shadow: inset 0 0 0 1px var(--line-strong);
+}
+.btn:active,
+.a-btn-primary:active,
+.a-btn-danger:active {
+  transform: scale(var(--press));
+  transition: transform 0.07s var(--ease-out);
+  background: var(--ctl-active);
+}
+.btn:disabled,
+.a-btn-primary:disabled,
+.a-btn-danger:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+.btn:disabled:active,
+.a-btn-primary:disabled:active,
+.a-btn-danger:disabled:active {
+  transform: none;
+}
+.btn .ic,
+.a-btn-primary .ic,
+.a-btn-danger .ic {
+  width: 15px;
+  height: 15px;
+}
+
+/* 主操作：全屏唯一允许出现的实心强调色块。
+   填充用 --accent-fill（比 --accent 更暗）而不是 --accent ——
+   白字落在 #4D6BFE 上只有 4.33:1，不到正文门槛。
+   选择器收下设置屏的 .a-btn-primary（原本是手抄的第二份配方，
+   还多叠了一层白色顶部渐变当"高光"）。 */
+.btn-accent,
+.a-btn-primary {
+  color: var(--on-accent);
+  background: var(--accent-fill);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--accent) 55%, #000);
+}
+.btn-accent:hover,
+.a-btn-primary:hover {
+  background: color-mix(in srgb, var(--accent-fill) 88%, #fff);
+}
+.btn-accent:active,
+.a-btn-primary:active {
+  transform: scale(var(--press));
+  transition: transform 0.07s var(--ease-out);
+}
+.btn-accent:disabled,
+.a-btn-primary:disabled {
+  opacity: 0.45;
+  background: var(--accent-fill);
+  transform: none;
+}
+
+/* 危险操作：描边 + 危险色文字。不给实心红 —— 红色的实心块在
+   一屏里只能有一个语义（真的按下去了），否则就廉价了。 */
+.btn-danger,
+.a-btn-danger {
+  color: var(--bad);
+  background: transparent;
+  box-shadow: inset 0 0 0 1px var(--bad-line);
+}
+.btn-danger:hover,
+.a-btn-danger:hover {
+  background: var(--bad-soft);
+  box-shadow: inset 0 0 0 1px var(--bad);
+}
+.btn-danger:active,
+.a-btn-danger:active {
+  transform: scale(var(--press));
+  transition: transform 0.07s var(--ease-out);
+}
+
+/* 安静按钮：无描边无底，用在"取消"这类次要出口 */
+.btn-quiet {
+  color: var(--tx-2);
+  background: transparent;
+  box-shadow: none;
+}
+.btn-quiet:hover {
+  background: var(--ctl-hover);
+  color: var(--tx-1);
+}
+
+.icon-btn {
+  width: 30px;
+  height: 30px;
+  flex: none;
+  border-radius: var(--r-sm);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--tx-2);
+  transition:
+    transform var(--t-slow) var(--ease-settle),
+    background var(--t-fast) var(--ease),
+    color var(--t-fast) var(--ease);
+}
+.icon-btn:hover {
+  background: var(--ctl-hover);
+  color: var(--tx-1);
+}
+.icon-btn:active {
+  transform: scale(0.92);
+  transition: transform 0.07s var(--ease-out);
+}
+.icon-btn.accent {
+  color: var(--accent-text);
+}
+.icon-btn.accent:hover {
+  background: var(--accent-soft);
+}
+.icon-btn.on {
+  background: var(--accent-soft);
+  color: var(--accent-text);
+  box-shadow: inset 0 0 0 1px var(--accent-line);
+}
+
+/* 胶囊/标签：描边而非填充。选中态才给浅染底。 */
+.chip {
+  height: 26px;
+  padding: 0 10px;
+  border-radius: var(--r-sm);
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: var(--fs-foot);
+  font-weight: 540;
+  letter-spacing: var(--tr-caption);
+  color: var(--tx-2);
+  background: transparent;
+  box-shadow: inset 0 0 0 1px var(--line-soft);
+  transition:
+    transform var(--t-slow) var(--ease-settle),
+    background var(--t-fast) var(--ease),
+    color var(--t-fast) var(--ease),
+    box-shadow var(--t-fast) var(--ease);
+}
+button.chip:hover {
+  background: var(--ctl-hover);
+  color: var(--tx-1);
+  box-shadow: inset 0 0 0 1px var(--line);
+}
+button.chip:active {
+  transform: scale(0.96);
+  transition: transform 0.07s var(--ease-out);
+}
+.chip .ic {
+  width: 14px;
+  height: 14px;
+}
+.chip.accent {
+  color: var(--accent-text);
+  background: var(--accent-soft);
+  box-shadow: inset 0 0 0 1px var(--accent-line);
+}
+.chip.warn {
+  color: var(--warn);
+  background: var(--warn-soft);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--warn) 32%, transparent);
+}
+.chip.stop {
+  color: var(--bad);
+  background: var(--bad-soft);
+  box-shadow: inset 0 0 0 1px var(--bad-line);
+}
+/* 模型名可能很长：胶囊自身限宽、名字单行省略（不能把输入区挤变形） */
+.chip.model {
+  color: var(--tx-2);
+  max-width: 200px;
+}
+.chip.model span {
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+/* 徽标：小号状态标。左侧那个点是"状态"的图形载体，
+   不靠颜色单独表意（形状 + 文字同在）。
+   .d-badge 是设置页（数据节/同步节）用的旧类名，共用同一条配方。 */
+.badge,
+.d-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 20px;
+  padding: 0 8px;
+  border-radius: var(--r-xs);
+  font-size: var(--fs-caption);
+  font-weight: 600;
+  letter-spacing: var(--tr-caption);
+  color: var(--tx-3);
+  background: var(--ctl-fill);
+  box-shadow: inset 0 0 0 1px var(--line-soft);
+}
+.badge i,
+.d-badge i {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: currentColor;
+}
+.badge.ok,
+.d-badge.ok {
+  color: var(--ok);
+  background: var(--ok-soft);
+  box-shadow: inset 0 0 0 1px var(--ok-line);
+}
+.badge.bad,
+.d-badge.bad {
+  color: var(--bad);
+  background: var(--bad-soft);
+  box-shadow: inset 0 0 0 1px var(--bad-line);
+}
+.badge.off,
+.d-badge.off {
+  color: var(--tx-dim);
+}
+
+/* ─────────────────────────────────────────────
+   输入控件
+   ───────────────────────────────────────────── */
+/* 输入井。选择器同时收下设置屏用的旧类名 .a-form-input / .a-textarea ——
+   它们原本是 app.css 里各自手抄的一份等价配方（连"旧类名，视觉与 .field
+   完全一致"这句自述都写在注释里了）。合并成"一条配方 + 多个选择器"之后，
+   两处控件不可能再悄悄长歪。 */
+.field,
+.a-form-input,
+.a-textarea {
+  width: 100%;
+  height: 36px;
+  padding: 0 12px;
+  border: 0;
+  outline: none;
+  border-radius: var(--r-sm);
+  font-size: var(--fs-sub);
+  letter-spacing: var(--tr-small);
+  color: var(--tx-1);
+  background: var(--well);
+  box-shadow: inset 0 0 0 1px var(--well-line);
+  transition:
+    box-shadow var(--t-fast) var(--ease),
+    background var(--t-fast) var(--ease);
+}
+.field::placeholder,
+.a-form-input::placeholder,
+.a-textarea::placeholder {
+  color: var(--tx-dim);
+}
+/* 指针聚焦：1.5px 强调色描边 + 一圈很淡的柔光。
+   这是"状态变化"，不该抢眼。 */
+.field:focus,
+.a-form-input:focus,
+.a-textarea:focus {
+  box-shadow:
+    inset 0 0 0 1.5px var(--accent),
+    var(--focus-halo);
+}
+textarea.field,
+.a-textarea {
+  height: auto;
+  min-height: 96px;
+  padding: 10px 12px;
+  line-height: 1.75;
+  resize: vertical;
+}
+select.field {
+  appearance: none;
+  -webkit-appearance: none;
+  cursor: pointer;
+  padding-right: 28px;
+}
+
+/* 开关：42×26 轨道 + 实色旋钮。旋钮不再用渐变 ——
+   一个白色实心圆 + 一条发丝描边就够，也更干净。
+   选择器同样收下设置屏的旧类名 .a-switch（原本是手抄的第二份配方）。 */
+.switch,
+.a-switch {
+  width: 42px;
+  height: 26px;
+  flex: none;
+  border-radius: var(--r-full);
+  padding: 0;
+  position: relative;
+  background: var(--well);
+  box-shadow: inset 0 0 0 1px var(--line);
+  transition:
+    background var(--t-mid) var(--ease),
+    box-shadow var(--t-mid) var(--ease);
+}
+.switch i,
+.a-switch i {
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: var(--knob);
+  box-shadow: 0 1px 2px var(--knob-sh);
+  transition:
+    transform var(--t-mid) var(--ease-settle),
+    width var(--t-mid) var(--ease-out);
+}
+.switch:active i,
+.a-switch:active i {
+  width: 25px;
+}
+.switch.on,
+.a-switch.on {
+  background: var(--accent-fill);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--accent) 55%, #000);
+}
+.switch.on i,
+.a-switch.on i {
+  transform: translateX(16px);
+}
+.switch.on:active i,
+.a-switch.on:active i {
+  transform: translateX(13px);
+}
+
+/* 滑杆：**实色轨道，不画已填充段**。
+   原来用两段硬分色渐变把已填充部分刷成强调色；这里直接取消 ——
+   旋钮位置已经表达了值，右侧还有数字读数，再刷一条彩色进度
+   是重复表达（而且那是本体系里最后一处渐变）。
+   注意：这里不再需要 --fill 这个内联变量，JSX 侧也已同步移除。 */
+.a-slider {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 100%;
+  height: 24px;
+  background: transparent;
+  cursor: pointer;
+}
+.a-slider::-webkit-slider-runnable-track {
+  height: 4px;
+  border-radius: var(--r-full);
+  background: var(--well);
+  box-shadow: inset 0 0 0 1px var(--well-line);
+}
+.a-slider::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 16px;
+  height: 16px;
+  margin-top: -6px;
+  border-radius: 50%;
+  background: var(--knob);
+  box-shadow:
+    0 1px 3px var(--knob-sh),
+    0 0 0 1px var(--line-strong);
+  transition: transform var(--t-mid) var(--ease-settle);
+}
+.a-slider::-webkit-slider-thumb:hover {
+  transform: scale(1.12);
+}
+.a-slider:active::-webkit-slider-thumb {
+  transform: scale(1.2);
+  transition: transform 0.07s var(--ease-out);
+}
+
+/* 分段控件：凹槽 + 实色滑块。滑块是 --raised 那一级，
+   靠明度差浮起来，不靠投影也不靠渐变。
+   .a-form-toggle 用于设置屏的协议格式二选一，.a-toggle-btn 是其按钮。 */
+.a-form-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  padding: 2px;
+  height: 32px;
+  border-radius: var(--r-sm);
+  background: var(--well);
+  box-shadow: inset 0 0 0 1px var(--well-line);
+}
+.a-toggle-btn {
+  height: 26px;
+  padding: 0 12px;
+  border-radius: var(--r-xs);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  font-size: var(--fs-foot);
+  font-weight: 560;
+  letter-spacing: var(--tr-caption);
+  color: var(--tx-3);
+  transition:
+    transform var(--t-slow) var(--ease-settle),
+    background var(--t-fast) var(--ease),
+    color var(--t-fast) var(--ease);
+}
+.a-toggle-btn:hover {
+  color: var(--tx-1);
+}
+.a-toggle-btn:active {
+  transform: scale(0.97);
+  transition: transform 0.07s var(--ease-out);
+}
+.a-toggle-btn.on {
+  color: var(--tx-1);
+  font-weight: 620;
+  background: var(--seg-thumb);
+  box-shadow: inset 0 0 0 1px var(--line);
+}
+.a-toggle-btn.on .ic {
+  color: var(--accent-text);
+}
+
+/* ─────────────────────────────────────────────
+   遮罩与浮起层
+   ───────────────────────────────────────────── */
+.scrim {
+  position: absolute;
+  inset: 0;
+  z-index: 80;
+  background: var(--scrim);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  animation: fade-in var(--t-mid) var(--ease);
+}
+@keyframes fade-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+.sheet {
+  border-radius: var(--r-lg);
+  animation: sheet-in var(--t-slow) var(--ease-out) both;
+}
+@keyframes sheet-in {
+  from {
+    opacity: 0;
+    transform: translateY(6px) scale(0.985);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+/* 遮罩之上的模态面：不透明抬升面。
+   （旧版在这里要把 blur 关掉，因为遮罩已经糊过一次背景，
+   模态再糊一次会把面压成一片死灰；现在整条模糊链都不存在了，
+   这条规则只剩"抬到 --raised 一级"。） */
+.scrim > .surface-raised {
+  background: var(--raised);
+}
+
+/* ─────────────────────────────────────────────
+   浏览器表面：滚动条、文字选择、光标
+   只设宽度与取色，不改滚动行为 —— 保持系统滚轮的惯性手感。
+   ───────────────────────────────────────────── */
+*::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+*::-webkit-scrollbar-track {
+  background: transparent;
+}
+*::-webkit-scrollbar-thumb {
+  background: color-mix(in srgb, var(--tx-3) 30%, transparent);
+  border: 3px solid transparent;
+  background-clip: content-box;
+  border-radius: var(--r-full);
+}
+*::-webkit-scrollbar-thumb:hover {
+  background: color-mix(in srgb, var(--tx-3) 52%, transparent);
+  border: 3px solid transparent;
+  background-clip: content-box;
+}
+*::-webkit-scrollbar-corner {
+  background: transparent;
+}
+
+::selection {
+  background: var(--accent-soft);
+  color: var(--tx-1);
+}
+
+/* ─────────────────────────────────────────────
+   焦点：键盘导航用高对比实心环；文本输入用自身描边 + 柔光
+   ───────────────────────────────────────────── */
+:focus-visible {
+  outline: var(--focus-w) solid var(--accent);
+  outline-offset: 2px;
+  border-radius: var(--r-xs);
+}
+/* 文本类控件走"1.5px 强调色描边 + 柔光"这套。浏览器同样会在鼠标点入时
+   判定 :focus-visible，若不禁掉就会出现"描边 + 柔光 + 实心环"三层叠加。 */
+input:focus-visible,
+textarea:focus-visible,
+select:focus-visible {
+  outline: none;
+}
+button:focus:not(:focus-visible),
+input:focus:not(:focus-visible),
+textarea:focus:not(:focus-visible),
+select:focus:not(:focus-visible) {
+  outline: none;
+}
+
+/* ════════════════════════════════════════════════════════════════
+   无障碍降级
+   ────────────────────────────────────────────────────────────────
+   新体系下三个信号里只剩两个还有活干：
+     · reduced-motion       —— 不是"没有反馈"，而是换成不引起前庭
+                               不适的等价反馈（淡入 + 颜色）
+     · contrast: more       —— 近实底 + 明确描边
+   reduced-transparency 已无对象：整屏不再有任何半透明材质，
+   该分支在旧体系里要处理的（去 blur、隐藏光斑、遮罩转实色）
+   在本体系里是**默认状态**，因此整块删除而不是留一个空壳。
+   ════════════════════════════════════════════════════════════════ */
+@media (prefers-reduced-motion: reduce) {
+  .surface-raised,
+  .sheet,
+  .scrim {
+    animation: fade-in 0.14s linear;
+  }
+  .surface-raised,
+  .sheet {
+    transform: none !important;
+  }
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+  /* 弹簧曲线下的位移直接取消，只保留颜色/透明度的即时变化 */
+  .btn:active,
+  .btn-accent:active,
+  .icon-btn:active,
+  .switch i,
+  button.chip:active,
+  .a-toggle-btn:active,
+  .a-slider::-webkit-slider-thumb {
+    transform: none;
+  }
+}
+
+@media (prefers-contrast: more) {
+  /* 先把发丝线整体提到文字级灰阶，这样所有用 var(--line*) 画的边
+     一次全加强 —— 这是本体系把"线"收敛成令牌才拿得到的好处。
+
+     选择器必须写成 `:root, html[data-theme]`，不能只写 `:root`：
+     两套主题里 light 定义在 `html[data-theme="..."]` 上，
+     特异性是 (0,1,1)，高过 `:root` 的 (0,1,0)。只写 `:root` 的话，
+     这个块对浅色主题**完全不生效**（dark 因为定义里带了 `:root,`
+     才碰巧命中）—— 也就是说"一次抬高所有发丝线"这句话本来是假的。
+     `html[data-theme]` 与主题块同特异性，靠加载顺序（tokens → surface）
+     取胜，两套主题一视同仁。 */
+  :root,
+  html[data-theme] {
+    --line: var(--tx-3);
+    --line-soft: var(--tx-3);
+    --line-strong: var(--tx-2);
+    --well-line: var(--tx-3);
+  }
+  /* 这里原来还有一组 `background-image: none`（当初用来在增强对比下
+     关掉各表面的渐变/高光）。整屏现在没有任何 background-image，
+     这组选择器还包括早已不存在的 .surface / .surface-bar，故删除。 */
+  .surface-rail,
+  .surface-sheet,
+  .surface-raised {
+    border-color: var(--tx-3);
+  }
+}

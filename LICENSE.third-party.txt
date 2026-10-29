@@ -1,0 +1,76 @@
+DeepCompose — 第三方组件许可清单(LICENSE.third-party.txt)
+════════════════════════════════════════════════════════════════════════
+
+本软件(DeepCompose 应用本体)以 GPL-3.0-only 发布,全文见仓库根目录 `LICENSE`。
+以下第三方组件**不随 GPL 授予**,各自按其原始条款分发。清单与仓库内实际
+携带的资产一一对应;升级任何依赖时须同步更新本文件。
+
+────────────────────────────────────────────────────────────────────────
+一、随产物分发的字体(src/assets/fonts/,二进制随单文件 exe 内嵌)
+────────────────────────────────────────────────────────────────────────
+
+1. Inter Variable(rsms/inter)
+   用途:界面拉丁字符与数字。
+   许可:SIL Open Font License 1.1 —— 全文随附:
+        src/assets/fonts/inter/LICENSE-Inter.txt
+   携带文件:inter/files/inter-latin-wght-normal.woff2
+             inter/files/inter-latin-ext-wght-normal.woff2
+
+2. MiSans(xiaomisans/MiSans)
+   用途:界面与正文汉字。
+   许可:Apache License 2.0 —— 全文随附:
+        src/assets/fonts/misans/LICENSE-MiSans.txt
+   携带文件:misans/MiSansVF.*.woff2(按 Unicode 区间分片的可变字体子集)
+
+────────────────────────────────────────────────────────────────────────
+二、前端运行时依赖(package.json dependencies)
+────────────────────────────────────────────────────────────────────────
+
+3. react / react-dom —— MIT © Meta Platforms, Inc.
+4. @tauri-apps/api —— MIT OR Apache-2.0 © Tauri Programme within The
+   Commons Conservancy
+5. @tauri-apps/plugin-dialog —— MIT OR Apache-2.0 © Tauri Programme
+   within The Commons Conservancy
+
+除以上四项外,应用界面**零第三方运行时依赖**(图标为自绘内联 SVG,
+动效为 CSS + 自写弹簧求解器,见 PRODUCT.md 的硬约束)。
+
+────────────────────────────────────────────────────────────────────────
+三、Rust 侧依赖(src-tauri/Cargo.toml 直接依赖;完整传递树见 Cargo.lock)
+────────────────────────────────────────────────────────────────────────
+
+(直接依赖见 src-tauri/Cargo.toml;完整传递树见 Cargo.lock。)
+
+6. tauri 2.x 框架 + tauri-build + tauri-plugin-dialog —— MIT OR Apache-2.0
+   © Tauri Programme within The Commons Conservancy
+7. serde / serde_derive / serde_json —— MIT OR Apache-2.0 © David Tolnay
+8. tokio —— MIT © Carl Lerche / Yuxuan Song 等 tokio 维护者
+9. reqwest(rustls-tls)—— MIT OR Apache-2.0 © Sean McArthur
+10. futures-util —— MIT OR Apache-2.0
+11. encoding_rs —— MIT OR Apache-2.0 © 何秀红(Henry Story)
+
+以上 crate 均为 MIT 与 Apache-2.0 双许可,与 GPL-3.0-only 的本软件分发兼容
+(Apache-2.0 组件按原文条款使用,不修改、不剥离 NOTICE)。逐包许可声明可在
+`cargo tree` 与各自 crates.io 页面核对。
+
+────────────────────────────────────────────────────────────────────────
+四、运行环境(不随本仓库分发,不构成许可授予)
+────────────────────────────────────────────────────────────────────────
+
+12. Microsoft Edge WebView2 Runtime —— 由微软单独授权,用户机器上已存在
+    或由安装器引导安装;本软件仅调用其公开接口,不捆绑其二进制。
+13. DeepSeek / 硅基流动等模型服务 —— 用户自备 API Key 直连,受各自
+    服务条款约束;本软件不中转、不收集任何请求内容。
+
+────────────────────────────────────────────────────────────────────────
+五、内置技能资产(assets/builtin-skills/,随包发布)
+────────────────────────────────────────────────────────────────────────
+
+14. novel-writer / novel-deslop / novel-structure-quality-coordinator /
+    skill-creator / token-optimizer —— 本项目原创文档与脚本,随应用本体
+    一并以 GPL-3.0-only 发布。首次启动释放到技能目录时**只补缺失、
+    不覆盖用户改过的副本**(见 docs/DECISIONS.md D-037)。
+
+════════════════════════════════════════════════════════════════════════
+备注:本清单遗漏不构成对相应组件原始许可的变更。发现与仓库实际不符
+之处,以组件随附的 LICENSE 文件与上游仓库为准,并请提 issue 修正本表。

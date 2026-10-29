@@ -1,0 +1,20 @@
+/* ════════════════════════════════════════════════════════════════
+   DeepCompose 字体装载层
+   ────────────────────────────────────────────────────────────────
+   中西文分工：
+     · Inter Variable —— 拉丁字母、数字、标点（字形紧凑、光学尺寸
+       精细，是「像不像 Apple」的主要贡献者）
+     · MiSans VF      —— 汉字（小米开源，Apache-2.0；几何、字面干净，
+       比 Windows 回退的微软雅黑更接近 iOS 的中文观感）
+
+   两者都按 unicode-range 切片：浏览器只请求当前界面真正出现的那几
+   片，所以「全部随包」不会变成「全部解析」。字体族与回退顺序在
+   tokens.css 的 --font-* 里定义，本文件只管把字装进环境。
+
+   许可证：MiSans = Apache-2.0，Inter = OFL-1.1，
+   许可证原文随字体文件一同携带在 assets/fonts 下的
+   LICENSE-MiSans.txt 与 LICENSE-Inter.txt。
+   ════════════════════════════════════════════════════════════════ */
+
+@import "../assets/fonts/inter/inter.css";
+@import "../assets/fonts/misans/misans.css";

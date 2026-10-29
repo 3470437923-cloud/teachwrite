@@ -1,0 +1,40 @@
+{
+  "name": "teachwrite",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "description": "TeachWrite — 长篇中文小说人工写作工作台",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc --noEmit && vite build",
+    "preview": "vite preview",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "test:macos-sim": "vitest run --config ./vitest.macos-sim.config.ts",
+    "typecheck": "tsc --noEmit",
+    "package": "node tools/package.mjs",
+    "package:windows": "powershell -NoProfile -ExecutionPolicy Bypass -File tools/package.ps1",
+    "package:linux": "bash tools/package-linux.sh",
+    "package:mac": "bash tools/package.sh",
+    "tauri": "tauri",
+    "tauri:dev": "tauri dev",
+    "tauri:build": "tauri build",
+    "tauri:build:mac": "tauri build"
+  },
+  "dependencies": {
+    "@tauri-apps/api": "^2.9.0",
+    "@tauri-apps/plugin-dialog": "^2.4.0",
+    "react": "^19.2.0",
+    "react-dom": "^19.2.0"
+  },
+  "devDependencies": {
+    "@tauri-apps/cli": "^2.9.0",
+    "@types/node": "^26.6.4",
+    "@types/react": "^19.2.0",
+    "@types/react-dom": "^19.2.0",
+    "@vitejs/plugin-react": "^5.0.0",
+    "typescript": "^5.9.2",
+    "vite": "^7.1.0",
+    "vitest": "^5.0.2"
+  }
+}

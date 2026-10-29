@@ -1,0 +1,23 @@
+/* 顶部导览独立于正文滚动区，不向编辑值插入任何文字。 */
+.tw-guide { flex: 0 0 auto; max-height: 42%; min-height: 0; overflow: auto; border-bottom: 1px solid var(--line); padding: 12px 18px; background: var(--surface, var(--bg)); color: var(--tx-1); }
+.tw-guide header, .tw-guide footer, .tw-review header { display:flex; align-items:center; flex-wrap:wrap; gap:10px; }
+.tw-guide header span, .tw-guide small, .tw-task-status { color:var(--tx-2); font-size:12px; }
+.tw-guide header strong { margin-right:auto; }
+.tw-guide-content { padding:10px 0; font-size:13px; line-height:1.65; }
+.tw-guide-content h2 { font-size:15px; margin:0 0 8px; }
+.tw-guide-content p { margin:6px 0; overflow-wrap:anywhere; }
+.tw-guide-content ul { padding-left:20px; }
+.tw-guide-content label { display:flex; align-items:center; gap:8px; margin-top:12px; padding:8px 0; cursor:pointer; }
+.tw-guide input { accent-color:var(--accent); }
+.tw-actions { flex:0 0 auto; display:flex; flex-wrap:wrap; gap:6px; padding:10px 14px; border-top:1px solid var(--line); }
+.tw-actions select, .tw-review select { color:var(--tx-1); background:var(--bg); border:1px solid var(--line); border-radius:5px; padding:4px 6px; font:inherit; min-width:0; max-width:100%; }
+.tw-actions p { flex-basis:100%; margin:3px 0 0; overflow-wrap:anywhere; }
+.tw-error { color:var(--danger, #c84545); font-size:12px; }
+.tw-review { flex:0 0 auto; max-height:34%; overflow:auto; padding:10px 14px; border-top:1px solid var(--line); font-size:13px; line-height:1.6; }
+.tw-review header { justify-content:space-between; margin-bottom:8px; }
+.tw-review article { padding:12px 0; border-top:1px solid var(--line); overflow-wrap:anywhere; }
+.tw-review h3 { font-size:13px; margin:0 0 6px; }
+.tw-review p { margin:6px 0; }
+.tw-quote { color:var(--tx-1); background:transparent; border:0; border-left:2px solid var(--accent); padding:4px 9px; text-align:left; font:inherit; cursor:pointer; white-space:pre-wrap; }
+.tw-quote:disabled { opacity:.55; cursor:default; }
+.tw-guide button:focus-visible, .tw-review button:focus-visible, .tw-actions button:focus-visible { outline:2px solid var(--accent); outline-offset:2px; }

@@ -1,0 +1,30 @@
+# 依赖与构建产物
+node_modules/
+dist/
+src-tauri/target/
+src-tauri/gen/
+
+# 临时与验证产物
+*.log
+_zoom_*.png
+_probe.html
+shots/
+
+# Python 派生产物
+__pycache__/
+*.pyc
+
+# 本地交付产物与验证证据
+release/
+.evidence/
+
+# 本地配置与凭据
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+.DS_Store
+
+# CI 待 token 授权 workflow scope 后再入库
+.github/workflows/

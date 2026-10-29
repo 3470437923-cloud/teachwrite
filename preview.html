@@ -1,0 +1,14 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>TeachWrite · 预览</title>
+  </head>
+  <body>
+    <div id="root"></div>
+    <!-- 仅预览入口：内存夹具是 Windows 盘符路径，须在模块加载前一致模拟平台。 -->
+    <script>Object.defineProperty(navigator, "platform", { value: "Windows", configurable: true });</script>
+    <script type="module" src="/src/preview/main.tsx"></script>
+  </body>
+</html>

@@ -1,0 +1,39 @@
+[package]
+name = "teachwrite"
+version = "0.1.0"
+description = "TeachWrite — 长篇中文小说人工写作工作台"
+authors = ["Liumorrow"]
+license = "GPL-3.0-only"
+edition = "2021"
+rust-version = "1.77"
+
+[lib]
+name = "teachwrite_lib"
+crate-type = ["staticlib", "cdylib", "rlib"]
+
+[build-dependencies]
+tauri-build = { version = "2", features = [] }
+
+[dependencies]
+# unstable：multiwebview（Window::add_child）需要的特性门，D-057 网页版参考栏用它
+# 把白名单站点嵌成主窗口的子视图。只用到 add_child 一处，其余不稳定 API 不碰。
+tauri = { version = "2", features = ["unstable"] }
+tauri-plugin-dialog = "2"
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+tokio = { version = "1", features = ["full"] }
+reqwest = { version = "0.12", features = ["stream", "json", "rustls-tls"], default-features = false }
+futures-util = "0.3"
+# 中文 Windows 用户的存量旧稿多为 GBK/GB18030：fs_read_text 的 UTF-8 失败回退靠它解码
+encoding_rs = "0.8"
+
+[features]
+default = ["custom-protocol"]
+custom-protocol = ["tauri/custom-protocol"]
+
+[profile.release]
+opt-level = "s"
+lto = true
+codegen-units = 1
+panic = "abort"
+strip = true
